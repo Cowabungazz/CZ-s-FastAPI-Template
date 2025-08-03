@@ -1,0 +1,112 @@
+# Notes:
+# Use a Service Connection named MyContainerRegistryServiceConnection pointing to your Harbor/ACR registry.
+# The push step runs only on main. Adjust as needed.
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  pythonVersion: '3.11'                  # or a matrix if you prefer
+  workingDirectory: '$(Build.SourcesDirectory)'
+  requirementsPath: 'src/requirements.txt'
+  dockerfilePath: 'Dockerfile'
+  imageRepository: 'my-org/my-service'   # repo path in Harbor/ACR
+  imageTag: '$(Build.SourceBranchName)-$(Build.BuildId)'
+
+stages:
+# ===== Build & Test =====
+- stage: BuildTest
+  displayName: Build and Test
+  jobs:
+  - job: test
+    displayName: Unit Tests
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      clean: true
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+        addToPath: true
+
+    - task: Cache@2
+      displayName: Cache pip
+      inputs:
+        key: 'pip | "$(Agent.OS)" | $(pythonVersion) | "$(requirementsPath)"'
+        restoreKeys: 'pip | "$(Agent.OS)" | $(pythonVersion)'
+        path: $(Pipeline.Workspace)/.cache/pip
+
+    - script: |
+        python -m pip install --upgrade pip wheel
+        pip config set global.cache-dir $(Pipeline.Workspace)/.cache/pip
+        pip install -r $(requirementsPath)
+      displayName: Install dependencies
+
+    - script: |
+        pytest -q --maxfail=1 --disable-warnings \
+          --junitxml=test-results.xml \
+          --cov=src --cov-report=xml --cov-report=term-missing
+      displayName: Run pytest
+
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: 'test-results.xml'
+        failTaskOnFailedTests: true
+
+    - task: PublishCodeCoverageResults@2
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: 'coverage.xml'
+        reportDirectory: 'htmlcov'
+
+# ===== Docker Build & Push =====
+- stage: Docker
+  displayName: Build & Push Image
+  dependsOn: BuildTest
+  condition: succeeded()
+  jobs:
+  - job: docker
+    displayName: Docker build & push
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      clean: true
+
+    # Authenticate to your registry (Harbor/ACR/etc.)
+    - task: Docker@2
+      displayName: Login to container registry
+      inputs:
+        command: login
+        containerRegistry: 'MyContainerRegistryServiceConnection'  # configure in Azure DevOps
+
+    - task: Docker@2
+      displayName: Build image
+      inputs:
+        command: build
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        tags: |
+          $(imageTag)
+
+    - task: Docker@2
+      displayName: Push image
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+      inputs:
+        command: push
+        repository: $(imageRepository)
+        tags: |
+          $(imageTag)

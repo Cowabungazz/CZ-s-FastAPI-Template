@@ -1,0 +1,19 @@
+# OPTIONAL
+# Keep images small
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.coverage
+htmlcov/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+dist/
+build/
+.git/
+.gitignore

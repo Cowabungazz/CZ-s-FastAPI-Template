@@ -1,0 +1,54 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Environments/Packaging ---
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+*.egg
+*.whl
+
+# --- Logs & coverage ---
+*.log
+logs/
+.coverage
+coverage.xml
+htmlcov/
+
+# --- Testing ---
+.pytest_cache/
+test-results.xml
+
+# --- Notebooks ---
+**/.ipynb_checkpoints/*
+
+# --- IDEs/Editors ---
+.vscode/
+.vscode/settings.json
+.idea/
+*.code-workspace
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Project-specific (from your list) ---
+**/__pycache__
+**/.pytest_cache
+*/.svn/
+*_20*/
+*/*.~*
+
+# --- Wheels copied to repo (avoid) ---
+*.whl

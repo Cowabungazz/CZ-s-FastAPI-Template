@@ -1,0 +1,14 @@
+{
+  "attribute1": "top-level-value",
+  "attribute2": {
+    "attribute1": "value1",
+    "attribute2": "value2",
+    "attribute3": "value3",
+    "attribute4": "value4",
+    "attribute5": ["a", "b", "c"]
+  },
+  "attribute3": {
+    "attribute1": "optional-value",
+    "attribute2": ["x", "y"]
+  }
+}
